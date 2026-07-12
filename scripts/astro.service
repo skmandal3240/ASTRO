@@ -1,0 +1,15 @@
+[Unit]
+Description=ASTRO AI local web service
+After=network.target ollama.service
+
+[Service]
+Type=simple
+Environment="HOME=%h"
+Environment="ASTRO_PORT=8080"
+Environment="ASTRO_VAULT=%h/Documents/notes"
+ExecStart=%h/.local/bin/astro serve %h/Documents/notes --host 127.0.0.1 --port 8080
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

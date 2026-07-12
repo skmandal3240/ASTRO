@@ -20,5 +20,7 @@ def log(event_type: str, payload: dict[str, Any], path: Path | None = None) -> N
         "type": event_type,
         "payload": payload,
     }
+    # ponytail: atomic append is enough; rotate when log grows >100 MB.
+    line = json.dumps(record, ensure_ascii=False, default=str) + "\n"
     with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        f.write(line)

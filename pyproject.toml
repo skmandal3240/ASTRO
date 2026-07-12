@@ -4,6 +4,19 @@ version = "0.1.0"
 description = "ASTRO AI — local-first, permissioned personal AI platform"
 readme = "README.md"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Saurabh Mandal"}]
+keywords = ["ai", "local", "ollama", "agent", "memory", "privacy"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.25",
@@ -16,6 +29,11 @@ dependencies = [
     "click>=8.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/skmandal3240/ASTRO"
+Repository = "https://github.com/skmandal3240/ASTRO"
+Issues = "https://github.com/skmandal3240/ASTRO/issues"
+
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "httpx>=0.27"]
 train = ["peft>=0.19.0", "trl>=1.8.0", "accelerate>=0.30.0", "bitsandbytes>=0.43.0"]
@@ -27,5 +45,5 @@ astro = "astro.cli:main"
 where = ["src"]
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
