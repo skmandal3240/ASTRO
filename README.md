@@ -12,13 +12,13 @@ Repository: `https://github.com/skmandal3240/ASTRO`
 
 | Phase | Goal | Status | Key artifacts |
 |---|---|---|---|
-| 0 | Product, policy, and evaluation | Complete | `docs/phase0/CAPABILITIES.md`, `docs/phase0/THREAT_MODEL.md`, `docs/phase0/EVAL.md`, `eval/eval.py` |
-| 1 | Local assistant MVP (daemon + vault chat) | Complete | `src/astro/`, `pyproject.toml`, vault chat works, 5/5 benchmark pass |
-| 2 | Permissioned skills and OS actions | **In progress** | `src/astro/capabilities.py`, `src/astro/skills.py`, `src/astro/agent.py`, `docs/phase2/README.md` |
-| 3 | Personal memory and feedback learning | Not started | — |
-| 4 | Model improvement and release engineering | Not started | — |
+| 0 | Product, policy, and evaluation | ✅ Complete | `docs/phase0/CAPABILITIES.md`, `docs/phase0/THREAT_MODEL.md`, `docs/phase0/EVAL.md`, `eval/eval.py` |
+| 1 | Local assistant MVP (daemon + vault chat) | ✅ Complete | `src/astro/`, `pyproject.toml`, vault chat works, 5/5 benchmark pass |
+| 2 | Permissioned skills and OS actions | ✅ Complete | `src/astro/capabilities.py`, `src/astro/skills.py`, `src/astro/agent.py`, `docs/phase2/README.md` |
+| 3 | Personal memory and feedback learning | 🚧 In Progress | `src/astro/memory.py`, `src/astro/feedback.py`, `src/astro/curator.py`, `src/astro/trainer.py`, `src/astro/model_registry.py`, `docs/phase3/README.md` |
+| 4 | Model improvement and release engineering | ⏳ Future | — |
 
-Current phase: **Phase 2**.
+Current phase: **Phase 3**.
 
 ---
 
@@ -40,11 +40,16 @@ ASTRO/
 │   ├── agent.py          # Planner + policy executor
 │   ├── audit.py          # Audit journal
 │   ├── capabilities.py   # Capability ledger and policy engine
-│   ├── chat.py           # Ollama-backed RAG chat
+│   ├── chat.py           # Ollama-backed RAG chat with memory
 │   ├── cli.py            # astro CLI
 │   ├── config.py         # Defaults
+│   ├── curator.py        # Training dataset builder
+│   ├── feedback.py       # Answer feedback store
 │   ├── index.py          # sqlite-vec + lexical index
+│   ├── memory.py         # Explicit memory store
+│   ├── model_registry.py # Base + adapter model switcher
 │   ├── skills.py         # File / shell / browser skills
+│   ├── trainer.py        # Offline LoRA adapter staging
 │   ├── vault.py          # Markdown parser
 │   └── web.py            # FastAPI chat UI
 ├── eval/
@@ -54,9 +59,10 @@ ASTRO/
 │   ├── PLAN.md           # Living build plan
 │   ├── ARCHITECTURE.md   # System architecture
 │   ├── SAFETY.md         # Safety rules
-│   └── phase0/           # Phase 0 docs
-│   └── phase1/           # Phase 1 docs
-│   └── phase2/           # Phase 2 docs
+│   ├── phase0/           # Phase 0 docs
+│   ├── phase1/           # Phase 1 docs
+│   ├── phase2/           # Phase 2 docs
+│   └── phase3/           # Phase 3 docs
 ├── tests/                # Smoke tests
 ├── pyproject.toml        # Package metadata and deps
 └── README.md             # This file
@@ -109,31 +115,55 @@ astro do "write hello to /tmp/astro-test.txt" --approve
 astro stop
 ```
 
+### Memory and feedback (Phase 3)
+
+```bash
+astro remember "My dentist is Dr. Rao" --scope personal --ttl 1y
+astro memories --search "dentist"
+astro feedback "question text" "answer text" positive --source note.md:1-2
+astro dataset v1
+astro train v1 v1-adapter --epochs 3 --lr 1e-4
+astro model          # list adapters
+astro activate base  # or v1-adapter
+```
+
 ---
 
-## Phase 1 exit criteria
+## Phase exit criteria
 
+### Phase 0
+- [x] Eval harness runnable.
+- [x] Threat model + capability model written.
+- [x] Phase 0 marked complete in README.
+
+### Phase 1
 - [x] Vault indexing with Markdown parser + embeddings + sqlite-vec.
 - [x] Chat answers grounded in retrieved vault context with citations.
 - [x] Audit journal logs index and chat events.
 - [x] Web UI accepts questions and shows sources.
-- [x] Vault Q&A benchmark: 5/5 correct on synthetic vault.
-- [x] Phase 1 marked complete in README.
+- [x] Vault Q&A benchmark passes.
 
-## Phase 2 exit criteria
-
+### Phase 2
 - [x] Capability ledger with grant/revoke/stop.
 - [x] Policy engine decides allowed / approval-required / blocked.
 - [x] File, shell, browser skills with preview + commit pattern.
 - [x] CLI commands: `grant`, `revoke`, `stop`, `do`.
-- [ ] Automated policy tests pass.
-- [ ] Phase 2 marked complete in README.
+- [x] Automated policy tests pass.
+- [x] Phase 2 marked complete in README.
+
+### Phase 3 (in progress)
+- [ ] Explicit memory CRUD with search, expiry, redaction.
+- [ ] Feedback loop on chat answers.
+- [ ] Dataset curation from feedback + memories.
+- [ ] Offline adapter training staging + model registry.
+- [ ] Chat injects relevant memories into context.
+- [ ] Phase 3 marked complete in README.
 
 ---
 
 ## Contributing
 
-Phase 2 is in progress. Phase 3 (personal memory and feedback learning) begins after Phase 2 tests pass.
+Phase 3 is in progress. Issues and PRs welcome.
 
 ---
 

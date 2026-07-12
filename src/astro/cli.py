@@ -10,7 +10,12 @@ import click
 from astro.agent import Agent
 from astro.capabilities import Grant, Ledger, PolicyEngine
 from astro.chat import Chat
+from astro.curator import Curator
+from astro.feedback import FeedbackStore
 from astro.index import Index
+from astro.memory import MemoryStore
+from astro.model_registry import ModelRegistry
+from astro.trainer import Trainer
 
 
 @click.group()
@@ -73,6 +78,97 @@ def do(request: str, model: str, approve: bool):
 
 
 @main.command()
+@click.argument("content")
+@click.option("--kind", default="fact", show_default=True, help="fact | preference | correction")
+@click.option("--source", default="user", show_default=True)
+@click.option("--scope", default=None)
+@click.option("--ttl", default=None, help="e.g. 1d, 2w, 1M, 1y")
+def remember(content: str, kind: str, source: str, scope: str | None, ttl: str | None):
+    """Save an explicit memory after user confirmation."""
+    store = MemoryStore()
+    m = store.add(content, kind=kind, source=source, scope=scope, ttl=ttl)
+    click.echo(f"Remembered [{m.id[:8]}]: {content}")
+    store.close()
+
+
+@main.command()
+@click.option("--kind")
+@click.option("--scope")
+@click.option("--search")
+@click.option("--limit", default=20, show_default=True)
+def memories(kind: str | None, scope: str | None, search: str | None, limit: int):
+    """List or search memories."""
+    store = MemoryStore()
+    if search:
+        rows = store.search(search, top_k=limit)
+    else:
+        rows = store.list(kind=kind, scope=scope, limit=limit)
+    for m in rows:
+        click.echo(f"{m.id[:8]} | {m.kind} | {m.scope or 'all'} | {m.content[:80]}")
+    store.close()
+
+
+@main.command()
+@click.argument("question")
+@click.argument("answer")
+@click.argument("rating")
+@click.option("--correction", default=None)
+@click.option("--source", default=None, help="Comma-separated source citations")
+@click.option("--model", default="")
+def feedback(question: str, answer: str, rating: str, correction: str | None, source: str | None, model: str):
+    """Record feedback for an answer."""
+    store = FeedbackStore()
+    sources = [s.strip() for s in source.split(",")] if source else []
+    fb = store.record(question, answer, rating, correction=correction, sources=sources, model=model)
+    click.echo(f"Recorded feedback [{fb.id[:8]}]: {rating}")
+    store.close()
+
+
+@main.command()
+@click.argument("name")
+@click.option("--min-rating", default="positive", show_default=True)
+@click.option("--include-memories/--no-include-memories", default=True)
+@click.option("--redact/--no-redact", default=True)
+def dataset(name: str, min_rating: str, include_memories: bool, redact: bool):
+    """Build a reviewed training dataset from feedback and memories."""
+    curator = Curator()
+    path = curator.build(name, min_rating=min_rating, include_memories=include_memories, redact=redact)
+    click.echo(f"Dataset built at {path}")
+    report = curator.review(name)
+    click.echo("\n" + report)
+
+
+@main.command()
+@click.argument("dataset_name")
+@click.argument("adapter_name")
+@click.option("--epochs", default=3, show_default=True)
+@click.option("--lr", default=1e-4, show_default=True)
+def train(dataset_name: str, adapter_name: str, epochs: int, lr: float):
+    """Stage an offline LoRA adapter from a dataset."""
+    trainer = Trainer()
+    path = trainer.train(dataset_name, adapter_name, epochs=epochs, learning_rate=lr)
+    click.echo(f"Adapter staged at {path}")
+
+
+@main.command(name="model")
+def model_list():
+    """List base model and local adapters."""
+    reg = ModelRegistry()
+    for e in reg.list():
+        marker = "*" if reg.active() == e["name"] else " "
+        click.echo(f"{marker} {e['name']} | {e.get('model', '')}")
+
+
+@main.command()
+@click.argument("name")
+def activate(name: str):
+    """Activate base or a named adapter."""
+    reg = ModelRegistry()
+    reg.activate(name)
+    click.echo(f"Active model: {name}")
+
+
+@main.command()
 @click.argument("vault_path", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--clear", is_flag=True, help="Clear existing index for this vault")
 @click.option("--db", type=click.Path(path_type=Path), help="Path to ASTRO database")
@@ -89,10 +185,10 @@ def index(vault_path: Path, clear: bool, db: Path | None, model: str | None):
 @click.argument("question")
 @click.argument("vault_path", required=False, type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--db", type=click.Path(path_type=Path))
-@click.option("--model", help="Ollama model name")
+@click.option("--model", help="Ollama model name or adapter name")
 @click.option("--top-k", default=5, show_default=True)
 def ask(question: str, vault_path: Path | None, db: Path | None, model: str | None, top_k: int):
-    """Ask a question using indexed vault context."""
+    """Ask a question using indexed vault context and memories."""
     chat = Chat(index=Index(db_path=db, model_name=None), model=model or "qwen2.5:0.5b")
     try:
         result = chat.ask(question, vault_path=vault_path, top_k=top_k)
@@ -101,6 +197,10 @@ def ask(question: str, vault_path: Path | None, db: Path | None, model: str | No
             click.echo("\nSources:")
             for s in result["sources"]:
                 click.echo(f"- {s['path']}:{s['start_line']}-{s['end_line']}")
+        if result["memories"]:
+            click.echo("\nMemories used:")
+            for m in result["memories"]:
+                click.echo(f"- {m['kind']}: {m['content'][:80]}")
     finally:
         chat.close()
 
@@ -110,7 +210,7 @@ def ask(question: str, vault_path: Path | None, db: Path | None, model: str | No
 @click.option("--host", default="127.0.0.1", show_default=True)
 @click.option("--port", default=8080, show_default=True)
 @click.option("--db", type=click.Path(path_type=Path))
-@click.option("--model", help="Ollama model name")
+@click.option("--model", help="Ollama model name or adapter name")
 def serve(vault_path: Path | None, host: str, port: int, db: Path | None, model: str | None):
     """Run ASTRO web daemon."""
     import uvicorn

@@ -10,9 +10,12 @@ def test_format_context_includes_citations():
     chunks = [
         {"path": "/tmp/a.md", "start_line": 1, "end_line": 2, "text": "Hello world"}
     ]
-    prompt = _format_context("What?", chunks)
+    prompt = _format_context("What?", chunks, [])
     assert "Hello world" in prompt
     assert "Source:" in prompt
+
+    prompt2 = _format_context("What?", [], [{"kind": "fact", "content": "foo"}])
+    assert "Memory [fact]: foo" in prompt2
 
 
 def test_chat_index_roundtrip():
