@@ -20,6 +20,7 @@ classifiers = [
 dependencies = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.25",
+    "python-multipart>=0.0.9",
     "pydantic>=2.0",
     "python-frontmatter>=1.0",
     "markdown>=3.5",
