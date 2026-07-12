@@ -259,6 +259,16 @@ class MemoryStore:
             updated_at=row[8],
         )
 
+
+    def get_by_prefix(self, prefix: str) -> Optional[Memory]:
+        """Find a memory by the first few characters of its id."""
+        rows = self._conn.execute("SELECT * FROM memories WHERE id LIKE ?", (prefix + "%",)).fetchall()
+        if not rows:
+            return None
+        if len(rows) > 1:
+            raise ValueError(f"ambiguous id prefix: {prefix} matches {len(rows)} memories")
+        return self._row_to_memory(rows[0])
+
     def close(self) -> None:
         self._conn.close()
 

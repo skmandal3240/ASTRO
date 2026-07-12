@@ -2,6 +2,8 @@
 from pathlib import Path
 import tempfile
 
+import pytest
+
 from astro.memory import MemoryStore
 
 
@@ -48,3 +50,13 @@ def test_ttl():
     assert _parse_ttl("1M") is not None
     assert _parse_ttl("1y") is not None
     assert _parse_ttl("bad") is None
+
+
+def test_get_by_prefix():
+    with tempfile.TemporaryDirectory() as td:
+        store = MemoryStore(db_path=Path(td) / "m.db")
+        m = store.add("unique content", kind="fact")
+        prefix = m.id[:8]
+        found = store.get_by_prefix(prefix)
+        assert found and found.id == m.id
+        assert store.get_by_prefix("zzzzzzzz") is None

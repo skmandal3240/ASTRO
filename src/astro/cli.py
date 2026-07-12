@@ -6,6 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import click
+import json
 
 from astro.agent import Agent
 from astro.capabilities import Grant, Ledger, PolicyEngine
@@ -149,6 +150,64 @@ def train(dataset_name: str, adapter_name: str, epochs: int, lr: float):
     path = trainer.train(dataset_name, adapter_name, epochs=epochs, learning_rate=lr)
     click.echo(f"Adapter staged at {path}")
 
+
+
+
+@main.group(name="memory")
+def memory_group():
+    """Explicit memory management."""
+    pass
+
+
+@memory_group.command(name="edit")
+@click.argument("mem_id")
+@click.argument("content")
+def memory_edit(mem_id: str, content: str):
+    """Edit an existing memory."""
+    store = MemoryStore()
+    try:
+        m = store.get(mem_id) or store.get_by_prefix(mem_id)
+        if m is None:
+            click.echo(f"Memory {mem_id} not found")
+            raise SystemExit(1)
+        m = store.edit(m.id, content)
+        click.echo(f"Updated [{m.id[:8]}]: {m.content}")
+    finally:
+        store.close()
+
+
+@memory_group.command(name="delete")
+@click.argument("mem_id")
+def memory_delete(mem_id: str):
+    """Delete a memory."""
+    store = MemoryStore()
+    try:
+        m = store.get(mem_id) or store.get_by_prefix(mem_id)
+        if m is None:
+            click.echo(f"Memory {mem_id} not found")
+            raise SystemExit(1)
+        store.delete(m.id)
+        click.echo(f"Deleted {m.id[:8]}")
+    finally:
+        store.close()
+
+
+@memory_group.command(name="export")
+@click.option("--redact/--no-redact", default=False)
+@click.option("--output", type=click.Path(path_type=Path))
+def memory_export(redact: bool, output: Path | None):
+    """Export memories to JSON."""
+    store = MemoryStore()
+    try:
+        data = store.export(redact=redact)
+        out = json.dumps(data, indent=2, ensure_ascii=False)
+        if output:
+            output.write_text(out)
+            click.echo(f"Exported {len(data)} memories to {output}")
+        else:
+            click.echo(out)
+    finally:
+        store.close()
 
 @main.command(name="model")
 def model_list():

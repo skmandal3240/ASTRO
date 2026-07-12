@@ -126,6 +126,9 @@ astro stop
 ```bash
 astro remember "My dentist is Dr. Rao" --scope personal --ttl 1y
 astro memories --search "dentist"
+astro memory edit <8-char-id> "updated text"
+astro memory delete <8-char-id>
+astro memory export --redact > memories.json
 astro feedback "question text" "answer text" positive --source note.md:1-2
 astro dataset v1
 astro train v1 v1-adapter --epochs 3 --lr 1e-4
