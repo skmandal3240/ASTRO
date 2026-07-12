@@ -7,6 +7,8 @@ from pathlib import Path
 
 import click
 
+from astro.agent import Agent
+from astro.capabilities import Grant, Ledger, PolicyEngine
 from astro.chat import Chat
 from astro.index import Index
 
@@ -15,6 +17,59 @@ from astro.index import Index
 def main():
     """ASTRO AI — local-first, permissioned personal AI."""
     pass
+
+
+@main.command()
+@click.argument("capability")
+@click.argument("scope")
+@click.option("--approval", default="always", show_default=True, help="always | rule | never")
+@click.option("--risk", default=None, help="low | medium | high")
+def grant(capability: str, scope: str, approval: str, risk: str | None):
+    """Grant a capability to ASTRO."""
+    ledger = Ledger()
+    g = Grant(capability=capability, scope=scope, approval=approval, risk=risk or "")
+    ledger.grant(g)
+    click.echo(f"Granted {capability} for {scope} (approval={approval})")
+
+
+@main.command()
+@click.argument("capability")
+@click.argument("scope", required=False)
+def revoke(capability: str, scope: str | None):
+    """Revoke a capability grant."""
+    ledger = Ledger()
+    n = ledger.revoke(capability, scope)
+    click.echo(f"Revoked {n} grant(s) for {capability}")
+
+
+@main.command()
+def stop():
+    """Emergency stop: revoke all active skills."""
+    ledger = Ledger()
+    for cap in ("file_write", "shell", "browser_research", "memory_write"):
+        ledger.revoke_all(cap)
+    click.echo("Stopped all skills.")
+
+
+@main.command()
+@click.argument("request")
+@click.option("--model", default="qwen2.5:0.5b", show_default=True)
+@click.option("--approve", is_flag=True, help="Pre-approve any proposed action")
+def do(request: str, model: str, approve: bool):
+    """Ask ASTRO to do something with policy-checked skills."""
+    agent = Agent(model=model)
+    plan = agent.plan(request)
+    click.echo(f"Plan: {plan}")
+    result = agent.execute(plan, approved=approve)
+    if result.get("requires_approval"):
+        click.echo("\n⚠️  This action requires approval.")
+        click.echo(result["preview"])
+        click.echo("\nRun again with --approve to execute.")
+    else:
+        if result.get("ok"):
+            click.echo(f"Result: ok\n{result.get('output', '')[:500]}")
+        else:
+            click.echo(f"Result: {result}")
 
 
 @main.command()
