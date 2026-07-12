@@ -123,36 +123,42 @@ class Index:
         return inserted
 
     def search(self, query: str, vault_path: Path | str | None = None, top_k: int = 5) -> List[dict]:
-        query_emb = self.model.encode(query, convert_to_numpy=True, normalize_embeddings=True)
-        emb_blob = query_emb.astype("float32").tobytes()
-        vault_clause = "AND c.vault = ?" if vault_path else ""
-        params = (emb_blob, top_k)
-        if vault_path:
-            params += (str(Path(vault_path).resolve()),)
-        rows = self._conn.execute(
-            f"""
-            SELECT c.id, c.path, c.start_line, c.end_line, c.title, c.text, c.tags, c.links, distance
-            FROM vec_chunks
-            JOIN chunks c ON c.id = vec_chunks.id
-            WHERE vec_chunks.embedding MATCH ? AND k = ? {vault_clause}
-            ORDER BY distance
-            """,
-            params,
-        ).fetchall()
-        return [
-            {
-                "id": r[0],
-                "path": r[1],
-                "start_line": r[2],
-                "end_line": r[3],
-                "title": r[4],
-                "text": r[5],
-                "tags": json.loads(r[6] or "[]"),
-                "links": json.loads(r[7] or "[]"),
-                "distance": r[8],
-            }
-            for r in rows
-        ]
+        # sqlite connections are not shareable across threads; open a fresh read-only-ish
+        # connection per call. This keeps the web UI safe under multi-threaded ASGI.
+        conn = self._open_db()
+        try:
+            query_emb = self.model.encode(query, convert_to_numpy=True, normalize_embeddings=True)
+            emb_blob = query_emb.astype("float32").tobytes()
+            vault_clause = "AND c.vault = ?" if vault_path else ""
+            params = (emb_blob, top_k)
+            if vault_path:
+                params += (str(Path(vault_path).resolve()),)
+            rows = conn.execute(
+                f"""
+                SELECT c.id, c.path, c.start_line, c.end_line, c.title, c.text, c.tags, c.links, distance
+                FROM vec_chunks
+                JOIN chunks c ON c.id = vec_chunks.id
+                WHERE vec_chunks.embedding MATCH ? AND k = ? {vault_clause}
+                ORDER BY distance
+                """,
+                params,
+            ).fetchall()
+            return [
+                {
+                    "id": r[0],
+                    "path": r[1],
+                    "start_line": r[2],
+                    "end_line": r[3],
+                    "title": r[4],
+                    "text": r[5],
+                    "tags": json.loads(r[6] or "[]"),
+                    "links": json.loads(r[7] or "[]"),
+                    "distance": r[8],
+                }
+                for r in rows
+            ]
+        finally:
+            conn.close()
 
     def close(self) -> None:
         self._conn.close()

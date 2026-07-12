@@ -21,12 +21,14 @@ Use only the provided context to answer. Cite sources as [path:relative/to/vault
 If the context does not contain the answer, say you don't know."""
 
 
-def _format_context(results: List[dict]) -> str:
+def _format_context(question: str, results: List[dict]) -> str:
+    """Build a grounded prompt from retrieved chunks and the question."""
     blocks = []
     for r in results:
-        cite = f"[{r['path']}:{r['start_line']}-{r['end_line']}"
-        blocks.append(f"{cite}\n{r['text']}")
-    return "\n\n".join(blocks)
+        cite = f"[{r['path']}:{r['start_line']}-{r['end_line']}]"
+        blocks.append(f"Source: {cite}\n{r['text']}")
+    context = "\n\n".join(blocks) if blocks else "(no relevant notes found)"
+    return f"Context:\n{context}\n\nQuestion: {question}\nAnswer:"
 
 
 class Chat:
@@ -37,8 +39,7 @@ class Chat:
 
     def ask(self, question: str, vault_path: Path | str | None = None, top_k: int = 5) -> dict:
         results = self.index.search(question, vault_path=vault_path, top_k=top_k)
-        context = _format_context(results) if results else "(no relevant notes found)"
-        prompt = f"Context:\n{context}\n\nQuestion: {question}\nAnswer:"
+        prompt = _format_context(question, results)
         r = requests.post(
             self.url,
             json={"model": self.model, "prompt": prompt, "system": SYSTEM_PROMPT, "stream": False},
@@ -57,8 +58,7 @@ class Chat:
 
     async def ask_stream(self, question: str, vault_path: Path | str | None = None, top_k: int = 5) -> AsyncIterator[str]:
         results = self.index.search(question, vault_path=vault_path, top_k=top_k)
-        context = _format_context(results) if results else "(no relevant notes found)"
-        prompt = f"Context:\n{context}\n\nQuestion: {question}\nAnswer:"
+        prompt = _format_context(question, results)
         # stream placeholder: full response as one chunk
         r = requests.post(
             self.url,

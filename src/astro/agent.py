@@ -9,7 +9,9 @@ import requests
 
 from astro.capabilities import HIGH_RISK, MEDIUM_RISK, Ledger, PolicyEngine
 from astro.config import DEFAULT_OLLAMA_MODEL, OLLAMA_URL
-from astro.skills import SKILLS
+from astro.skills import SKILLS, BrowserFetchSkill, FileReadSkill, FileWriteSkill, ShellSkill
+
+import json
 
 
 SYSTEM_PROMPT = """You are ASTRO's planner. The user wants to perform a task. Choose ONE tool from the list below and emit ONLY a JSON object with keys: tool, params, reason. Do not add explanation outside the JSON.
@@ -60,7 +62,8 @@ class Agent:
             return {"ok": False, "error": decision["reason"], "decision": decision}
 
         if decision.get("approval_required") and not approved:
-            return {"ok": False, "requires_approval": True, "preview": SKILLS[tool].run(**params).preview, "plan": plan}
+            preview = SKILLS[tool].run(**params)
+            return {"ok": False, "requires_approval": True, "preview": preview.preview, "plan": plan}
 
         if capability == "file_write":
             return FileWriteSkill.commit(**params).__dict__
@@ -72,15 +75,4 @@ class Agent:
         return FileReadSkill.run(**params).__dict__
 
 
-# Avoid circular import at module load: skills module already imported
-def import_skill_methods():
-    global FileWriteSkill, ShellSkill, BrowserFetchSkill, FileReadSkill
-    from astro.skills import BrowserFetchSkill, FileReadSkill, FileWriteSkill, ShellSkill
-
-
-import_skill_methods()
-
-import json  # imported after function defs to satisfy runtime use
-
-# Re-bind to satisfy mypy/static after late import
-_ = FileReadSkill, FileWriteSkill, ShellSkill, BrowserFetchSkill
+# ponytail: json is imported at top; duplicate import below was dead code left by earlier patch
