@@ -12,13 +12,13 @@ Repository: `https://github.com/skmandal3240/ASTRO`
 
 | Phase | Goal | Status | Key artifacts |
 |---|---|---|---|
-| 0 | Product, policy, and evaluation | **In progress** | `docs/phase0/CAPABILITIES.md`, `docs/phase0/THREAT_MODEL.md`, `docs/phase0/EVAL.md`, `eval/eval.py` |
-| 1 | Local assistant MVP (daemon + vault chat) | Not started | — |
+| 0 | Product, policy, and evaluation | Complete | `docs/phase0/CAPABILITIES.md`, `docs/phase0/THREAT_MODEL.md`, `docs/phase0/EVAL.md`, `eval/eval.py` |
+| 1 | Local assistant MVP (daemon + vault chat) | **In progress** | `src/astro/`, `pyproject.toml`, `docs/phase1/README.md` |
 | 2 | Permissioned skills and OS actions | Not started | — |
 | 3 | Personal memory and feedback learning | Not started | — |
 | 4 | Model improvement and release engineering | Not started | — |
 
-Current phase: **Phase 0**.
+Current phase: **Phase 1**.
 
 ---
 
@@ -35,57 +35,81 @@ Current phase: **Phase 0**.
 
 ```
 ASTRO/
-├── docs/
-│   ├── PRD.md                  # Full product requirements
-│   ├── PLAN.md                 # Living build plan (same as PRD)
-│   ├── ARCHITECTURE.md         # System architecture
-│   ├── SAFETY.md               # Non-negotiable safety rules
-│   └── phase0/
-│       ├── README.md           # Phase 0 overview
-│       ├── CAPABILITIES.md     # Permission model
-│       ├── THREAT_MODEL.md     # Threats and mitigations
-│       └── EVAL.md             # Evaluation plan
+├── src/astro/
+│   ├── __init__.py
+│   ├── audit.py          # Audit journal
+│   ├── chat.py           # Ollama-backed RAG chat
+│   ├── cli.py            # astro index / ask / serve
+│   ├── config.py         # Defaults
+│   ├── index.py          # sqlite-vec + lexical index
+│   ├── vault.py          # Markdown parser
+│   └── web.py            # FastAPI chat UI
 ├── eval/
-│   └── eval.py                 # Phase 0 evaluation harness
-└── README.md                   # This file
+│   └── eval.py           # Phase 0 evaluation harness
+├── docs/
+│   ├── PRD.md            # Full product requirements
+│   ├── PLAN.md           # Living build plan
+│   ├── ARCHITECTURE.md   # System architecture
+│   ├── SAFETY.md         # Safety rules
+│   ├── phase0/           # Phase 0 docs
+│   └── phase1/           # Phase 1 docs
+├── pyproject.toml        # Package metadata and deps
+└── README.md             # This file
 ```
 
 ---
 
 ## Quick start
 
+### Install
+
+```bash
+git clone https://github.com/skmandal3240/ASTRO.git
+cd ASTRO
+pip install -e .
+```
+
+### Index your vault
+
+```bash
+astro index ~/Documents/obsidian-vault --clear
+```
+
+### Ask a question
+
+```bash
+astro ask "What did I write about pricing?" ~/Documents/obsidian-vault
+```
+
+### Run the web UI
+
+```bash
+astro serve ~/Documents/obsidian-vault
+# open http://127.0.0.1:8080
+```
+
 ### Run Phase 0 evaluation harness
 
 ```bash
-# Clone the repo
-git clone https://github.com/skmandal3240/ASTRO.git
-cd ASTRO
-
-# Run all benchmark categories against the stub model
 python eval/eval.py --all
-
-# Run a single category
-python eval/eval.py --category retrieval
 ```
-
-The harness currently uses a stub model. When a real local model backend is added, only the `_ask_model()` function in `eval/eval.py` needs to change.
 
 ---
 
-## Phase 0 exit criteria
+## Phase 1 exit criteria
 
-- [x] Capability and permission model written.
-- [x] Threat model and acceptance tests defined.
-- [x] Evaluation plan and baseline model candidates documented.
-- [x] Minimal runnable evaluation harness with benchmark fixtures.
-- [ ] Select baseline model and produce reproducible score report.
-- [ ] Mark Phase 0 as complete in README.
+- [x] Vault indexing with Markdown parser + embeddings + sqlite-vec.
+- [x] Chat answers grounded in retrieved vault context with citations.
+- [x] Audit journal logs index and chat events.
+- [x] Web UI accepts questions and shows sources.
+- [ ] Evaluation on real vault Q&A benchmark meets 50%+ accuracy.
+- [ ] Phase 1 marked complete in README.
 
 ---
 
 ## Contributing
 
-This is an early-stage project. Phase 1 work will begin after Phase 0 exit criteria are met. Open questions are listed in `docs/PRD.md`.
+Phase 1 is in progress. Phase 2 (permissioned skills) begins after the Phase 1 benchmark gate is met.
 
 ---
 
