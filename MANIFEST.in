@@ -1,0 +1,4 @@
+include README.md
+global-include src/astro/templates/*.html
+global-include scripts/*.py
+graft docs

@@ -15,10 +15,10 @@ Repository: `https://github.com/skmandal3240/ASTRO`
 | 0 | Product, policy, and evaluation | ✅ Complete | `docs/phase0/CAPABILITIES.md`, `docs/phase0/THREAT_MODEL.md`, `docs/phase0/EVAL.md`, `eval/eval.py` |
 | 1 | Local assistant MVP (daemon + vault chat) | ✅ Complete | `src/astro/`, `pyproject.toml`, vault chat works, 5/5 benchmark pass |
 | 2 | Permissioned skills and OS actions | ✅ Complete | `src/astro/capabilities.py`, `src/astro/skills.py`, `src/astro/agent.py`, `docs/phase2/README.md` |
-| 3 | Personal memory and feedback learning | 🚧 In Progress | `src/astro/memory.py`, `src/astro/feedback.py`, `src/astro/curator.py`, `src/astro/trainer.py`, `src/astro/model_registry.py`, `docs/phase3/README.md` |
-| 4 | Model improvement and release engineering | ⏳ Future | — |
+| 3 | Personal memory and feedback learning | ✅ Complete | `src/astro/memory.py`, `src/astro/feedback.py`, `src/astro/curator.py`, `src/astro/trainer.py`, `src/astro/model_registry.py`, `docs/phase3/README.md` |
+| 4 | Release engineering and packaging | ✅ Complete | `Makefile`, `scripts/setup.sh`, `scripts/release_check.py`, `docs/phase4/README.md` |
 
-Current phase: **Phase 3**.
+Current phase: **Phase 4**.
 
 ---
 
@@ -77,7 +77,13 @@ ASTRO/
 ```bash
 git clone https://github.com/skmandal3240/ASTRO.git
 cd ASTRO
-pip install -e .
+make install
+```
+
+Or run the helper script:
+
+```bash
+bash scripts/setup.sh
 ```
 
 ### Index your vault
@@ -151,19 +157,26 @@ astro activate base  # or v1-adapter
 - [x] Automated policy tests pass.
 - [x] Phase 2 marked complete in README.
 
-### Phase 3 (in progress)
-- [ ] Explicit memory CRUD with search, expiry, redaction.
-- [ ] Feedback loop on chat answers.
-- [ ] Dataset curation from feedback + memories.
-- [ ] Offline adapter training staging + model registry.
-- [ ] Chat injects relevant memories into context.
-- [ ] Phase 3 marked complete in README.
+### Phase 3
+- [x] Explicit memory CRUD with search, expiry, redaction.
+- [x] Feedback loop on chat answers.
+- [x] Dataset curation from feedback + memories.
+- [x] Offline adapter training staging + model registry.
+- [x] Chat injects relevant memories into context.
+- [x] Phase 3 marked complete in README.
+
+### Phase 4
+- [x] `Makefile` with `install`, `test`, `serve`, `lint`, `release-check`.
+- [x] `scripts/setup.sh` for first-time install.
+- [x] `scripts/release_check.py` for pre-release validation.
+- [x] `docs/phase4/README.md` release notes.
+- [x] README quickstart updated.
 
 ---
 
 ## Contributing
 
-Phase 3 is in progress. Issues and PRs welcome.
+All four phases are complete for the internal 0.1.0 release. PyPI upload and desktop packaging are future work.
 
 ---
 
