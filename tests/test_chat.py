@@ -1,6 +1,7 @@
 """Smoke tests for chat/citations."""
 from pathlib import Path
 import tempfile
+from unittest.mock import patch, MagicMock
 
 from astro.index import Index
 from astro.chat import Chat, _format_context
@@ -27,6 +28,11 @@ def test_chat_index_roundtrip():
         idx = Index(db_path=db)
         idx.index_vault(td, clear=True)
         chat = Chat(index=idx, model="qwen2.5:0.5b")
-        result = chat.ask("What is the deadline?", vault_path=td, top_k=3)
+        # ponytail: mock Ollama so CI doesn't need a running server
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {"response": "The deadline is Friday."}
+        mock_resp.raise_for_status = MagicMock()
+        with patch("astro.chat.requests.post", return_value=mock_resp):
+            result = chat.ask("What is the deadline?", vault_path=td, top_k=3)
         assert result["sources"]
         assert "Friday" in result["sources"][0]["text"]
